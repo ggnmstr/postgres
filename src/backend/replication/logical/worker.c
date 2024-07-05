@@ -181,6 +181,7 @@
 #include "tcop/tcopprot.h"
 #include "utils/acl.h"
 #include "utils/dynahash.h"
+#include "utils/elog.h"
 #include "utils/guc.h"
 #include "utils/inval.h"
 #include "utils/lsyscache.h"
@@ -564,6 +565,24 @@ handle_streamed_transaction(LogicalRepMsgType action, StringInfo s)
 	StringInfoData original_msg;
 
 	apply_action = get_transaction_apply_action(stream_xid, &winfo);
+	elog(DEBUG1, "handle_streamed_transaction: arg action is %c",action);
+	switch (apply_action) {
+        case TRANS_LEADER_APPLY:
+			elog(DEBUG1, "handle_streamed_transaction: apply_aciton TRANS_LEADER_APPLY");
+			break;
+        case TRANS_LEADER_SERIALIZE:
+			elog(DEBUG1, "handle_streamed_transaction: apply_aciton TRANS_LEADER_SERIALIZE");
+			break;
+        case TRANS_LEADER_SEND_TO_PARALLEL:
+			elog(DEBUG1, "handle_streamed_transaction: apply_action TRANS_LEADER_SEND_TO_PARALLEL");
+			break;
+        case TRANS_LEADER_PARTIAL_SERIALIZE:
+			elog(DEBUG1, "handle_streamed_transaction: apply_action TRANS_LEADER_PARTIAL_SERIALIZE");
+			break;
+        case TRANS_PARALLEL_APPLY:
+			elog(DEBUG1, "handle_streamed_transaction: apply_action TRANS_PARALLEL_APPLY");
+			break;
+        }
 
 	/* not in streaming mode */
 	if (apply_action == TRANS_LEADER_APPLY)
@@ -1495,8 +1514,11 @@ apply_handle_stream_start(StringInfo s)
 	set_apply_error_context_xact(stream_xid, InvalidXLogRecPtr);
 
 	/* Try to allocate a worker for the streaming transaction. */
-	if (first_segment)
+	elog(DEBUG1, "apply_handle_stream_start: xid %zu",stream_xid);
+	if (first_segment) {
+		elog(DEBUG1, "apply_handle_stream_start: first segment!");
 		pa_allocate_worker(stream_xid);
+	}
 
 	apply_action = get_transaction_apply_action(stream_xid, &winfo);
 
@@ -3282,6 +3304,8 @@ apply_dispatch(StringInfo s)
 	saved_command = apply_error_callback_arg.command;
 	apply_error_callback_arg.command = action;
 
+	elog(DEBUG1, "apply_dispatch action %c\n",action);
+
 	switch (action)
 	{
 		case LOGICAL_REP_MSG_BEGIN:
@@ -3666,7 +3690,7 @@ LogicalRepApplyLoop(XLogRecPtr last_received)
 			ProcessConfigFile(PGC_SIGHUP);
 		}
 
-		if (rc & WL_TIMEOUT)
+		if (0)
 		{
 			/*
 			 * We didn't receive anything new. If we haven't heard anything

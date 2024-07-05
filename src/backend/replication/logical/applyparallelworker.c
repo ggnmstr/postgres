@@ -168,6 +168,7 @@
 #include "storage/ipc.h"
 #include "storage/lmgr.h"
 #include "tcop/tcopprot.h"
+#include "utils/elog.h"
 #include "utils/inval.h"
 #include "utils/memutils.h"
 #include "utils/syscache.h"
@@ -224,6 +225,8 @@ typedef struct ParallelApplyWorkerEntry
  */
 static HTAB *ParallelApplyTxnHash = NULL;
 
+static uint16 parallel_workers_count = 0;
+
 /*
 * A list (pool) of active parallel apply workers. The information for
 * the new worker is added to the list after successfully launching it. The
@@ -265,6 +268,7 @@ static bool
 pa_can_start(void)
 {
 	/* Only leader apply workers can start parallel apply workers. */
+	elog(DEBUG1, "pa_can_start: am I leader?");
 	if (!am_leader_apply_worker())
 		return false;
 
@@ -284,6 +288,7 @@ pa_can_start(void)
 	 * using parallel streaming mode, or if the publisher does not support
 	 * parallel apply.
 	 */
+	elog(DEBUG1, "pa_can_start: !MyLogicalRepWorker->parallel_apply ? ");
 	if (!MyLogicalRepWorker->parallel_apply)
 		return false;
 
@@ -299,6 +304,7 @@ pa_can_start(void)
 	 * STREAM START message, and it doesn't seem worth sending the extra eight
 	 * bytes with the STREAM START to enable parallelism for this case.
 	 */
+	elog(DEBUG1, "pa_can_start: if (!XLogRecPtrIsInvalid(MySubscription->skiplsn)) ? ");
 	if (!XLogRecPtrIsInvalid(MySubscription->skiplsn))
 		return false;
 
@@ -309,6 +315,7 @@ pa_can_start(void)
 	 * should_apply_changes_for_rel) as we won't know remote_final_lsn by that
 	 * time. So, we don't start the new parallel apply worker in this case.
 	 */
+	elog(DEBUG1, "pa_can_start: all tablesyncs ready?");
 	if (!AllTablesyncsReady())
 		return false;
 
@@ -446,6 +453,8 @@ pa_launch_parallel_worker(void)
 	if (launched)
 	{
 		ParallelApplyWorkerPool = lappend(ParallelApplyWorkerPool, winfo);
+		winfo->id = parallel_workers_count;
+		parallel_workers_count++;
 	}
 	else
 	{
@@ -475,6 +484,8 @@ pa_allocate_worker(TransactionId xid)
 
 	if (!pa_can_start())
 		return;
+
+	elog(DEBUG1, "pa_allocate_worker: pa_can_start!!!");
 
 	winfo = pa_launch_parallel_worker();
 	if (!winfo)
@@ -509,6 +520,7 @@ pa_allocate_worker(TransactionId xid)
 	winfo->in_use = true;
 	winfo->serialize_changes = false;
 	entry->winfo = winfo;
+	elog(DEBUG1,"pa_allocate_worker: xid %zu set for worker id %zu", xid, winfo->id);
 }
 
 /*

@@ -187,6 +187,7 @@ typedef struct ParallelApplyWorkerShared
  */
 typedef struct ParallelApplyWorkerInfo
 {
+	uint16 id;
 	/*
 	 * This queue is used to send changes from the leader apply worker to the
 	 * parallel apply worker.

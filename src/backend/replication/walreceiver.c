@@ -569,7 +569,7 @@ WalReceiverMain(char *startup_data, size_t startup_data_len)
 						XLogWalRcvSendReply(true, false);
 					}
 				}
-				if (rc & WL_TIMEOUT)
+				if (0)
 				{
 					/*
 					 * We didn't receive anything new. If we haven't heard
