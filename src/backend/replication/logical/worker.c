@@ -4232,7 +4232,7 @@ stream_cleanup_files(Oid subid, TransactionId xid)
 
 	/* Delete the changes file. */
 	changes_filename(path, subid, xid);
-	BufFileDeleteFileSet(MyLogicalRepWorker->stream_fileset, path, false);
+	/* BufFileDeleteFileSet(MyLogicalRepWorker->stream_fileset, path, false); */
 
 	/* Delete the subxact file, if it exists. */
 	subxact_filename(path, subid, xid);
