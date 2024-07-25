@@ -2170,6 +2170,30 @@ apply_handle_stream_commit(StringInfo s)
 
 	apply_action = get_transaction_apply_action(xid, &winfo);
 
+
+	switch (apply_action)
+	{
+		case TRANS_LEADER_APPLY:
+			elog(DEBUG1, "handle_stream_commit: xid %zu, action: TRANS_LEADER_APPLY ", xid);
+			break;
+
+		case TRANS_LEADER_SEND_TO_PARALLEL:
+			elog(DEBUG1, "handle_stream_commit: xid %zu, action: TRANS_LEADER_SEND_TO_PARALLEL ", xid);
+			break;
+
+		case TRANS_LEADER_PARTIAL_SERIALIZE:
+			elog(DEBUG1, "handle_stream_commit: xid %zu, action:  TRANS_LEADER_SEND_TO_PARALLEL ", xid);
+			break;
+
+		case TRANS_PARALLEL_APPLY:
+			elog(DEBUG1, "handle_stream_commit: xid %zu, action: TRANS_PARALLEL_APPLY ", xid);
+			break;
+
+		default:
+			elog(ERROR, "unexpected apply action: %d", (int) apply_action);
+			break;
+	}
+
 	switch (apply_action)
 	{
 		case TRANS_LEADER_APPLY:
