@@ -5101,6 +5101,7 @@ get_transaction_apply_action(TransactionId xid, ParallelApplyWorkerInfo **winfo)
 
 	if (am_parallel_apply_worker())
 	{
+		elog(DEBUG1, "get_transaction_apply_action: TRANS_PARALLEL_APPLY");
 		return TRANS_PARALLEL_APPLY;
 	}
 
@@ -5114,10 +5115,12 @@ get_transaction_apply_action(TransactionId xid, ParallelApplyWorkerInfo **winfo)
 
 	if (*winfo && (*winfo)->serialize_changes)
 	{
+		elog(DEBUG1, "get_transaction_apply_action: TRANS_LEADER_PARTIAL_SERIALIZE");
 		return TRANS_LEADER_PARTIAL_SERIALIZE;
 	}
 	else if (*winfo)
 	{
+		elog(DEBUG1, "get_transaction_apply_action: TRANS_LEADER_SEND_TO_PARALLEL");
 		return TRANS_LEADER_SEND_TO_PARALLEL;
 	}
 
@@ -5129,10 +5132,12 @@ get_transaction_apply_action(TransactionId xid, ParallelApplyWorkerInfo **winfo)
 	 */
 	else if (in_streamed_transaction)
 	{
+		elog(DEBUG1, "get_transaction_apply_action: TRANS_LEADER_SERIALIZE");
 		return TRANS_LEADER_SERIALIZE;
 	}
 	else
 	{
+		elog(DEBUG1, "get_transaction_apply_action: TRANS_LEADER_APPLY");
 		return TRANS_LEADER_APPLY;
 	}
 }
